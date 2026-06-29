@@ -1,0 +1,56 @@
+name: Daily Report
+
+on:
+  schedule:
+    # 01:00 UTC = 10:00 JST
+    - cron: "0 1 * * *"
+  workflow_dispatch:
+    inputs:
+      date:
+        description: "Target date (YYYY-MM-DD). Defaults to today JST."
+        required: false
+        type: string
+      dry_run:
+        description: "Dry run (do not send notification)"
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  daily-report:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          version: "latest"
+
+      - name: Set up Python
+        run: uv python install
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: Run daily report
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          LARK_WEBHOOK_URL: ${{ secrets.LARK_WEBHOOK_URL }}
+          LINE_CHANNEL_ACCESS_TOKEN: ${{ secrets.LINE_CHANNEL_ACCESS_TOKEN }}
+          GITHUB_TARGET_TYPE: ${{ vars.TARGET_TYPE }}
+          GITHUB_TARGET_ORG: ${{ vars.TARGET_ORG }}
+          GITHUB_TARGET_USER: ${{ vars.TARGET_USER }}
+          GITHUB_TARGET_REPOS: ${{ vars.TARGET_REPOS }}
+          NOTIFY_PROVIDER: ${{ vars.NOTIFY_PROVIDER }}
+          LINE_TO: ${{ vars.LINE_TO }}
+        run: |
+          ARGS=""
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            ARGS="$ARGS --dry-run"
+          fi
+          if [ -n "${{ inputs.date }}" ]; then
+            ARGS="$ARGS --date ${{ inputs.date }}"
+          fi
+          uv run daily-report $ARGS
