@@ -45,9 +45,9 @@ def resolve_date(date_str: str | None) -> date:
         except ValueError:
             logger.error("Invalid date format: %r (expected YYYY-MM-DD)", date_str)
             sys.exit(1)
-    # Default: today in JST
+    # Default: yesterday in JST (report runs at 10:00 JST for previous day's activity)
     jst = timezone(timedelta(hours=9))
-    return datetime.now(tz=jst).date()
+    return (datetime.now(tz=jst) - timedelta(days=1)).date()
 
 
 def main(argv: list[str] | None = None) -> None:
