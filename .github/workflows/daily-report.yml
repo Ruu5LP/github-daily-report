@@ -39,12 +39,12 @@ jobs:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
           LARK_WEBHOOK_URL: ${{ secrets.LARK_WEBHOOK_URL }}
           LINE_CHANNEL_ACCESS_TOKEN: ${{ secrets.LINE_CHANNEL_ACCESS_TOKEN }}
-          GITHUB_TARGET_TYPE: ${{ vars.TARGET_TYPE }}
-          GITHUB_TARGET_ORG: ${{ vars.TARGET_ORG }}
-          GITHUB_TARGET_USER: ${{ vars.TARGET_USER }}
-          GITHUB_TARGET_REPOS: ${{ vars.TARGET_REPOS }}
-          NOTIFY_PROVIDER: ${{ vars.NOTIFY_PROVIDER }}
-          LINE_TO: ${{ vars.LINE_TO }}
+          GITHUB_TARGET_TYPE: ${{ secrets.TARGET_TYPE || vars.TARGET_TYPE }}
+          GITHUB_TARGET_ORG: ${{ secrets.TARGET_ORG || vars.TARGET_ORG }}
+          GITHUB_TARGET_USER: ${{ secrets.TARGET_USER || vars.TARGET_USER }}
+          GITHUB_TARGET_REPOS: ${{ secrets.TARGET_REPOS || vars.TARGET_REPOS }}
+          NOTIFY_PROVIDER: ${{ secrets.NOTIFY_PROVIDER || vars.NOTIFY_PROVIDER }}
+          LINE_TO: ${{ secrets.LINE_TO || vars.LINE_TO }}
         run: |
           ARGS=""
           if [ "${{ inputs.dry_run }}" = "true" ]; then
