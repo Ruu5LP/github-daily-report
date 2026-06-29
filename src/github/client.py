@@ -62,8 +62,7 @@ class GitHubClient:
                 return response.json()
 
             if response.status_code in (403, 429) and (
-                "rate limit" in response.text.lower()
-                or response.status_code == 429
+                "rate limit" in response.text.lower() or response.status_code == 429
             ):
                 reset_ts = int(response.headers.get("X-RateLimit-Reset", time.time() + 65))
                 reset_at = datetime.fromtimestamp(reset_ts, tz=UTC)

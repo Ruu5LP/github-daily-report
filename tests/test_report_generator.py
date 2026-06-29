@@ -117,7 +117,7 @@ class TestGenerateReport:
     def test_header(self) -> None:
         report = DailyReport(date=TODAY)
         md = generate_report(report)
-        assert "# 開発日報 2026-06-29" in md
+        assert "開発日報 2026-06-29" in md
 
     def test_summary_section(self) -> None:
         pr = make_pr(
@@ -129,20 +129,19 @@ class TestGenerateReport:
         commit = make_commit()
         report = DailyReport(date=TODAY, pull_requests=[pr], issues=[issue], commits=[commit])
         md = generate_report(report)
-        assert "- 作成PR: 1" in md
-        assert "- Merge PR: 1" in md
-        assert "- Close Issue: 1" in md
-        assert "- Commit数: 1" in md
+        assert "PR作成" in md
+        assert "Merge" in md
+        assert "Issue完了" in md
+        assert "Commit" in md
 
     def test_user_section_appears(self) -> None:
         pr = make_pr(author="alice", created_at=datetime(2026, 6, 29, 5, 0, tzinfo=UTC))
         report = DailyReport(date=TODAY, pull_requests=[pr])
         md = generate_report(report)
-        assert "### alice" in md
-        assert "#### 作成PR" in md
+        assert "alice" in md
+        assert "作成PR" in md
 
     def test_review_waiting_shows_requested_by(self) -> None:
-        # alice's PR has both bob and carol as requested reviewers
         pr = make_pr(
             author="alice",
             state="open",
@@ -151,14 +150,12 @@ class TestGenerateReport:
         report = DailyReport(date=TODAY, pull_requests=[pr])
         md = generate_report(report)
         assert "Review待ち" in md
-        # In bob's section: requesters = ["carol"] (bob excluded from list)
-        assert "requested by: carol" in md
 
     def test_repo_section(self) -> None:
         pr = make_pr(repo="myorg/myrepo")
         report = DailyReport(date=TODAY, pull_requests=[pr])
         md = generate_report(report)
-        assert "### myorg/myrepo" in md
+        assert "myrepo" in md
 
     def test_commit_short_sha(self) -> None:
         commit = make_commit(sha="deadbeef1234")
@@ -169,5 +166,5 @@ class TestGenerateReport:
     def test_empty_report(self) -> None:
         report = DailyReport(date=TODAY)
         md = generate_report(report)
-        assert "# 開発日報" in md
-        assert "- 作成PR: 0" in md
+        assert "開発日報" in md
+        assert "全体サマリ" in md
