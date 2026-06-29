@@ -167,4 +167,4 @@ class TestGenerateReport:
         report = DailyReport(date=TODAY)
         md = generate_report(report)
         assert "開発日報" in md
-        assert "全体サマリ" in md
+        assert "今日のまとめ" in md

@@ -21,13 +21,12 @@ def generate_report(report: DailyReport) -> str:
             [
                 f"📋 **開発日報 {date_str}**",
                 "",
-                "**📊 全体サマリ**",
-                f"リポジトリ更新: **{len(report.updated_repos)}**　"
-                f"PR作成: **{len(report.created_prs)}**　"
-                f"Merge: **{len(report.merged_prs)}**",
-                f"Issue完了: **{len(report.closed_issues)}**　"
-                f"今日のCommit: **{len(report.commits)}**　"
-                f"Review待ち: **{len(report.review_waiting_prs)}**",
+                "**📊 今日のまとめ**",
+                f"　リポジトリ更新: **{len(report.updated_repos)}**",
+                f"　PR作成: **{len(report.created_prs)}**　／　Merge: **{len(report.merged_prs)}**",
+                f"　Issue完了: **{len(report.closed_issues)}**",
+                f"　今日のCommit: **{len(report.commits)}**",
+                f"　Review待ち: **{len(report.review_waiting_prs)}**",
             ]
         )
     )
@@ -38,7 +37,7 @@ def generate_report(report: DailyReport) -> str:
     user_blocks = [b for b in user_blocks if b]
 
     if user_blocks:
-        blocks.append(f"{DIVIDER}\n**👤 人別進捗**")
+        blocks.append(f"{DIVIDER}\n**👤 メンバーの動き**")
         for block in user_blocks:
             blocks.append(block)
 
@@ -82,26 +81,26 @@ def _user_section(user: str, report: DailyReport) -> str:
         lines.append("")
         lines.append("  🔧 **作成PR**")
         for pr in created:
-            lines.append(f"  • {_pr_link(pr)}　`{_short_repo(pr.repo)}`")
+            lines.append(f"  • `{_short_repo(pr.repo)}` {_pr_link(pr)}")
 
     if merged:
         lines.append("")
         lines.append("  ✅ **MergePR**")
         for pr in merged:
-            lines.append(f"  • {_pr_link(pr)}　`{_short_repo(pr.repo)}`")
+            lines.append(f"  • `{_short_repo(pr.repo)}` {_pr_link(pr)}")
 
     if closed_issues:
         lines.append("")
         lines.append("  🔒 **CloseIssue**")
         for issue in closed_issues:
-            lines.append(f"  • {_issue_link(issue)}　`{_short_repo(issue.repo)}`")
+            lines.append(f"  • `{_short_repo(issue.repo)}` {_issue_link(issue)}")
 
     if commits:
         lines.append("")
         lines.append(f"  📝 **今日のCommit** ({len(commits)}件)")
         for commit in commits[:5]:
             repo_name = _short_repo(commit.repo)
-            lines.append(f"  • `{commit.short_sha}` {commit.first_line}　`{repo_name}`")
+            lines.append(f"  • `{repo_name}` `{commit.short_sha}` {commit.first_line}")
         if len(commits) > 5:
             lines.append(f"  • ...他 {len(commits) - 5} 件")
 
@@ -109,7 +108,7 @@ def _user_section(user: str, report: DailyReport) -> str:
         lines.append("")
         lines.append("  👀 **Review待ち**")
         for pr in review_waiting:
-            lines.append(f"  • {_pr_link(pr)}　`{_short_repo(pr.repo)}`")
+            lines.append(f"  • `{_short_repo(pr.repo)}` {_pr_link(pr)}")
 
     return "\n".join(lines)
 
