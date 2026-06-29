@@ -112,15 +112,15 @@ uv run daily-report --date 2026-06-28
 ────────────────────────────────────
 **メンバーの動き**
 
-👤 **Ruu5LP**
+👤 **username**
 
   **作成PR**
-  • `kouchareTV` [#11485 高チャレ管理画面の企業情報を同期](https://github.com/...)
+  • `your-repo` [#123 機能追加: ○○の実装](https://github.com/...)
 
   **今日のCommit** (3件)
-  • `kouchareTV` `953d363` エラーコード周りの実装完了
-  • `kouchareTV` `bbe70a5` レビュー指摘を修正
-  • `kouchareTV` `64f3a50` レビュー指摘と命名変更
+  • `your-repo` `a1b2c3d` 実装完了
+  • `your-repo` `e4f5g6h` レビュー指摘を修正
+  • `your-repo` `i7j8k9l` 命名を修正
 ```
 
 ---
