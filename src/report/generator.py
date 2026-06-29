@@ -11,24 +11,26 @@ DIVIDER = "─" * 36
 
 def generate_report(report: DailyReport) -> str:
     """Generate a Discord-friendly report string."""
-    sections: list[str] = []
+    blocks: list[str] = []
 
     date_str = report.date.strftime("%Y-%m-%d")
 
-    # --- Header ---
-    sections.append(f"📋 **開発日報 {date_str}**")
-
-    # --- Overall Summary ---
-    summary_lines = [
-        "**📊 全体サマリ**",
-        f"　リポジトリ更新: **{len(report.updated_repos)}**　"
-        f"PR作成: **{len(report.created_prs)}**　"
-        f"Merge: **{len(report.merged_prs)}**",
-        f"　Issue完了: **{len(report.closed_issues)}**　"
-        f"Commit: **{len(report.commits)}**　"
-        f"Review待ち: **{len(report.review_waiting_prs)}**",
-    ]
-    sections.append("\n".join(summary_lines))
+    # --- Header + Summary ---
+    blocks.append(
+        "\n".join(
+            [
+                f"📋 **開発日報 {date_str}**",
+                "",
+                "**📊 全体サマリ**",
+                f"リポジトリ更新: **{len(report.updated_repos)}**　"
+                f"PR作成: **{len(report.created_prs)}**　"
+                f"Merge: **{len(report.merged_prs)}**",
+                f"Issue完了: **{len(report.closed_issues)}**　"
+                f"今日のCommit: **{len(report.commits)}**　"
+                f"Review待ち: **{len(report.review_waiting_prs)}**",
+            ]
+        )
+    )
 
     # --- Per-user progress ---
     users = _collect_users(report)
@@ -36,18 +38,20 @@ def generate_report(report: DailyReport) -> str:
     user_blocks = [b for b in user_blocks if b]
 
     if user_blocks:
-        sections.append(f"{DIVIDER}\n**👤 人別進捗**")
-        sections.extend(user_blocks)
+        blocks.append(f"{DIVIDER}\n**👤 人別進捗**")
+        for block in user_blocks:
+            blocks.append(block)
 
     # --- Per-repo summary ---
     repos = sorted(report.updated_repos)
     repo_blocks = [_repo_section(repo, report) for repo in repos]
 
     if repo_blocks:
-        sections.append(f"{DIVIDER}\n**📁 Repository別**")
-        sections.extend(repo_blocks)
+        blocks.append(f"{DIVIDER}\n**📁 Repository別**")
+        for block in repo_blocks:
+            blocks.append(block)
 
-    return f"\n{DIVIDER}\n".join(sections)
+    return "\n\n".join(blocks)
 
 
 def _collect_users(report: DailyReport) -> set[str]:
@@ -75,32 +79,37 @@ def _user_section(user: str, report: DailyReport) -> str:
     lines = [f"**{user}**"]
 
     if created:
+        lines.append("")
         lines.append("  🔧 **作成PR**")
         for pr in created:
-            lines.append(f"    • {_pr_link(pr)}　`{_short_repo(pr.repo)}`")
+            lines.append(f"  • {_pr_link(pr)}　`{_short_repo(pr.repo)}`")
 
     if merged:
+        lines.append("")
         lines.append("  ✅ **MergePR**")
         for pr in merged:
-            lines.append(f"    • {_pr_link(pr)}　`{_short_repo(pr.repo)}`")
+            lines.append(f"  • {_pr_link(pr)}　`{_short_repo(pr.repo)}`")
 
     if closed_issues:
+        lines.append("")
         lines.append("  🔒 **CloseIssue**")
         for issue in closed_issues:
-            lines.append(f"    • {_issue_link(issue)}　`{_short_repo(issue.repo)}`")
+            lines.append(f"  • {_issue_link(issue)}　`{_short_repo(issue.repo)}`")
 
     if commits:
-        lines.append(f"  📝 **Commit** ({len(commits)}件)")
+        lines.append("")
+        lines.append(f"  📝 **今日のCommit** ({len(commits)}件)")
         for commit in commits[:5]:
             repo_name = _short_repo(commit.repo)
-            lines.append(f"    • `{commit.short_sha}` {commit.first_line}　`{repo_name}`")
+            lines.append(f"  • `{commit.short_sha}` {commit.first_line}　`{repo_name}`")
         if len(commits) > 5:
-            lines.append(f"    • ...他 {len(commits) - 5} 件")
+            lines.append(f"  • ...他 {len(commits) - 5} 件")
 
     if review_waiting:
+        lines.append("")
         lines.append("  👀 **Review待ち**")
         for pr in review_waiting:
-            lines.append(f"    • {_pr_link(pr)}　`{_short_repo(pr.repo)}`")
+            lines.append(f"  • {_pr_link(pr)}　`{_short_repo(pr.repo)}`")
 
     return "\n".join(lines)
 
@@ -123,22 +132,25 @@ def _repo_section(repo: str, report: DailyReport) -> str:
             pr_parts.append(f"merged {len(merged_prs)}")
         if closed_prs:
             pr_parts.append(f"closed {len(closed_prs)}")
-        lines.append(f"  🔀 PR: {' / '.join(pr_parts)}")
+        lines.append("")
+        lines.append(f"  🔀 **PR** ({' / '.join(pr_parts)})")
         for pr in repo_prs:
             icon = {"open": "🟢", "merged": "🟣", "closed": "🔴"}.get(pr.state, "⚪")
-            lines.append(f"    {icon} {_pr_link(pr)}")
+            lines.append(f"  {icon} {_pr_link(pr)}")
 
     if repo_issues:
-        lines.append(f"  🔒 Issue: {len(repo_issues)}件 closed")
+        lines.append("")
+        lines.append(f"  🔒 **Issue** ({len(repo_issues)}件 closed)")
         for issue in repo_issues:
-            lines.append(f"    • {_issue_link(issue)}")
+            lines.append(f"  • {_issue_link(issue)}")
 
     if repo_commits:
-        lines.append(f"  📝 Commit: {len(repo_commits)}件")
+        lines.append("")
+        lines.append(f"  📝 **今日のCommit** ({len(repo_commits)}件)")
         for commit in repo_commits[:5]:
-            lines.append(f"    • `{commit.short_sha}` {commit.first_line} ({commit.author})")
+            lines.append(f"  • `{commit.short_sha}` {commit.first_line} ({commit.author})")
         if len(repo_commits) > 5:
-            lines.append(f"    • ...他 {len(repo_commits) - 5} 件")
+            lines.append(f"  • ...他 {len(repo_commits) - 5} 件")
 
     return "\n".join(lines)
 
