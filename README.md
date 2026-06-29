@@ -66,14 +66,14 @@ uv sync
 2. **Actions タブ → Daily Report → Run workflow** で手動実行して確認
 3. 以降は毎朝 JST 10:00 に前日のアクティビティが自動送信されます
 
-### 最小構成（COFFISO org を Discord に通知する場合）
+### 最小構成（Org 全体を Discord に通知する場合）
 
 | Secret 名 | 値 |
 | --- | --- |
 | `GH_TOKEN` | `ghp_xxxx...` |
 | `DISCORD_WEBHOOK_URL` | `https://discord.com/api/webhooks/...` |
 | `TARGET_TYPE` | `org_all` |
-| `TARGET_ORG` | `COFFISO` |
+| `TARGET_ORG` | `your-org-name` |
 | `NOTIFY_PROVIDER` | `discord` |
 
 ---
