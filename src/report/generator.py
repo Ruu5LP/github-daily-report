@@ -23,7 +23,8 @@ def generate_report(report: DailyReport) -> str:
                 "",
                 "**今日のまとめ**",
                 f"　リポジトリ更新: **{len(report.updated_repos)}**",
-                f"　PR作成: **{len(report.created_prs)}**　／　Merge: **{len(report.merged_prs)}**",
+                f"　PR作成: **{len(report.created_prs)}**",
+                f"　Merge: **{len(report.merged_prs)}**",
                 f"　Issue完了: **{len(report.closed_issues)}**",
                 f"　今日のCommit: **{len(report.commits)}**",
                 f"　Review待ち: **{len(report.review_waiting_prs)}**",
@@ -39,15 +40,6 @@ def generate_report(report: DailyReport) -> str:
     if user_blocks:
         blocks.append(f"{DIVIDER}\n**メンバーの動き**")
         for block in user_blocks:
-            blocks.append(block)
-
-    # --- Per-repo summary ---
-    repos = sorted(report.updated_repos)
-    repo_blocks = [_repo_section(repo, report) for repo in repos]
-
-    if repo_blocks:
-        blocks.append(f"{DIVIDER}\n**📁 Repository別**")
-        for block in repo_blocks:
             blocks.append(block)
 
     return "\n\n".join(blocks)
