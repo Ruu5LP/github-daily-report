@@ -61,9 +61,21 @@ class GitHubClient:
             if response.status_code == 200:
                 return response.json()
 
-            if response.status_code == 403 and "rate limit" in response.text.lower():
-                reset_ts = int(response.headers.get("X-RateLimit-Reset", time.time() + 60))
+            if response.status_code in (403, 429) and (
+                "rate limit" in response.text.lower()
+                or response.status_code == 429
+            ):
+                reset_ts = int(response.headers.get("X-RateLimit-Reset", time.time() + 65))
                 reset_at = datetime.fromtimestamp(reset_ts, tz=UTC)
+                wait_secs = max(0, (reset_at - datetime.now(UTC)).total_seconds()) + 2
+                if attempt < retries - 1:
+                    logger.warning(
+                        "Rate limit hit, waiting %.0fs until reset at %s",
+                        wait_secs,
+                        reset_at.isoformat(),
+                    )
+                    time.sleep(wait_secs)
+                    continue
                 raise RateLimitError(reset_at)
 
             if response.status_code in (500, 502, 503) and attempt < retries - 1:
