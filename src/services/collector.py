@@ -6,7 +6,7 @@ from datetime import UTC, date, datetime, timedelta, timezone
 
 from src.config.settings import Settings, TargetType
 from src.github.client import GitHubClient
-from src.models.report import DailyReport, PullRequest
+from src.models.report import Commit, DailyReport, PullRequest
 from src.utils.logger import logger
 
 
@@ -60,7 +60,7 @@ class DataCollector:
                 report.issues.extend(issues)
                 logger.info("  Issues closed: %d", len(issues))
 
-                commits = self._client.get_repo_commits(owner, repo, since, until)
+                commits = self._collect_commits(owner, repo, prs, since, until)
                 report.commits.extend(commits)
                 logger.info("  Commits: %d", len(commits))
 
@@ -68,6 +68,33 @@ class DataCollector:
                 logger.error("Error processing %s: %s", repo_full, e)
 
         return report
+
+    def _collect_commits(
+        self,
+        owner: str,
+        repo: str,
+        prs: list[PullRequest],
+        since: str,
+        until: str,
+    ) -> list[Commit]:
+        """Collect today's commits from default branch + all active PRs (deduped by SHA)."""
+        seen: set[str] = set()
+        result: list[Commit] = []
+
+        # Default branch commits
+        for commit in self._client.get_repo_commits(owner, repo, since, until):
+            if commit.sha not in seen:
+                seen.add(commit.sha)
+                result.append(commit)
+
+        # Feature branch commits via PRs updated today
+        for pr in prs:
+            for commit in self._client.get_pr_commits(owner, repo, pr.number, since, until):
+                if commit.sha not in seen:
+                    seen.add(commit.sha)
+                    result.append(commit)
+
+        return result
 
     def _collect_prs(self, owner: str, repo: str, date_str: str) -> list[PullRequest]:
         prs = self._client.get_repo_prs(owner, repo, date_str)

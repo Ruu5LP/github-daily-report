@@ -283,7 +283,7 @@ class GitHubClient:
     # --- Commits ---
 
     def get_repo_commits(self, owner: str, repo: str, since: str, until: str) -> list[Commit]:
-        """Fetch commits between since and until (ISO 8601)."""
+        """Fetch commits on the default branch between since and until."""
         try:
             items = self._paginate(
                 f"/repos/{owner}/{repo}/commits",
@@ -291,19 +291,36 @@ class GitHubClient:
             )
         except requests.HTTPError as e:
             if e.response is not None and e.response.status_code == 409:
-                # Empty repo
                 return []
             raise
         return [self._parse_commit(item, f"{owner}/{repo}") for item in items]
 
+    def get_pr_commits(
+        self, owner: str, repo: str, pr_number: int, since: str, until: str
+    ) -> list[Commit]:
+        """Fetch commits for a specific PR that fall within since..until."""
+        try:
+            items = self._paginate(f"/repos/{owner}/{repo}/pulls/{pr_number}/commits")
+        except requests.HTTPError:
+            return []
+
+        result: list[Commit] = []
+        for item in items:
+            commit_data: dict[str, Any] = item.get("commit", {})
+            author_date = commit_data.get("author", {}).get("date", "")
+            if since <= author_date < until:
+                result.append(self._parse_commit(item, f"{owner}/{repo}"))
+        return result
+
     def _parse_commit(self, item: dict[str, Any], repo: str) -> Commit:
         commit_data: dict[str, Any] = item.get("commit", {})
         author_data: dict[str, Any] = commit_data.get("author", {})
-        committer: dict[str, Any] | None = item.get("author")
+        github_author: dict[str, Any] | None = item.get("author")
 
-        author_login = committer.get("login", "") if committer else ""
-        if not author_login:
-            author_login = author_data.get("name", "unknown")
+        # Prefer GitHub login; fall back to git author name
+        author_login = (github_author.get("login", "") if github_author else "") or author_data.get(
+            "name", "unknown"
+        )
 
         return Commit(
             sha=item.get("sha", ""),
