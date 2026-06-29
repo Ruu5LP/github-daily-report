@@ -293,7 +293,11 @@ class GitHubClient:
             if e.response is not None and e.response.status_code == 409:
                 return []
             raise
-        return [self._parse_commit(item, f"{owner}/{repo}") for item in items]
+        return [
+            self._parse_commit(item, f"{owner}/{repo}")
+            for item in items
+            if not item.get("commit", {}).get("message", "").startswith("Merge pull request")
+        ]
 
     def get_pr_commits(
         self, owner: str, repo: str, pr_number: int, since: str, until: str
@@ -308,7 +312,8 @@ class GitHubClient:
         for item in items:
             commit_data: dict[str, Any] = item.get("commit", {})
             author_date = commit_data.get("author", {}).get("date", "")
-            if since <= author_date < until:
+            message = commit_data.get("message", "")
+            if since <= author_date < until and not message.startswith("Merge pull request"):
                 result.append(self._parse_commit(item, f"{owner}/{repo}"))
         return result
 
