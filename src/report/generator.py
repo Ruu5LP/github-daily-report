@@ -134,8 +134,8 @@ def _repo_section(repo: str, report: DailyReport) -> str:
         lines.append("")
         lines.append(f"  🔀 **PR** ({' / '.join(pr_parts)})")
         for pr in repo_prs:
-            icon = {"open": "🟢", "merged": "🟣", "closed": "🔴"}.get(pr.state, "⚪")
-            lines.append(f"  {icon} {_pr_link(pr)}")
+            label = {"open": "open", "merged": "merged", "closed": "closed"}.get(pr.state, pr.state)
+            lines.append(f"  • [{label}] {_pr_link(pr)}")
 
     if repo_issues:
         lines.append("")
