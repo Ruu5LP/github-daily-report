@@ -24,9 +24,7 @@ class TestDataCollector:
 
         expected_since = "2026-06-28T15:00:00Z"
         expected_until = "2026-06-29T15:00:00Z"
-        client.get_repo_prs.assert_called_once_with(
-            "owner", "repo", expected_since, expected_until
-        )
+        client.get_repo_prs.assert_called_once_with("owner", "repo", expected_since, expected_until)
         client.get_repo_issues.assert_called_once_with(
             "owner", "repo", expected_since, expected_until
         )

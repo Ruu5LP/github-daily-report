@@ -282,8 +282,7 @@ class GitHubClient:
         since_utc = _format_utc(start_at)
         until_utc = _format_utc(end_at)
         items = self._search_issues(
-            f"type:issue repo:{owner}/{repo} is:closed "
-            f"closed:>={since_utc} closed:<{until_utc}"
+            f"type:issue repo:{owner}/{repo} is:closed closed:>={since_utc} closed:<{until_utc}"
         )
         return [self._parse_issue(item, f"{owner}/{repo}") for item in items]
 

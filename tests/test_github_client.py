@@ -9,9 +9,7 @@ SINCE = "2026-06-28T15:00:00Z"
 UNTIL = "2026-06-29T15:00:00Z"
 
 
-def make_commit_item(
-    sha: str, committed_at: str, message: str = "commit"
-) -> dict[str, object]:
+def make_commit_item(sha: str, committed_at: str, message: str = "commit") -> dict[str, object]:
     return {
         "sha": sha,
         "html_url": f"https://github.com/owner/repo/commit/{sha}",
@@ -32,8 +30,7 @@ class TestGitHubClientDateWindows:
             client.get_repo_prs("owner", "repo", SINCE, UNTIL)
 
         search.assert_called_once_with(
-            "type:pr repo:owner/repo "
-            "updated:>=2026-06-28T15:00:00Z updated:<2026-06-29T15:00:00Z"
+            "type:pr repo:owner/repo updated:>=2026-06-28T15:00:00Z updated:<2026-06-29T15:00:00Z"
         )
 
     def test_issue_search_uses_utc_timestamp_window(self) -> None:
