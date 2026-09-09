@@ -5,7 +5,6 @@ from unittest.mock import patch
 
 from src.github.client import GitHubClient
 
-
 SINCE = "2026-06-28T15:00:00Z"
 UNTIL = "2026-06-29T15:00:00Z"
 
