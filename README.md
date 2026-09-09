@@ -10,6 +10,7 @@ GitHub Organization・ユーザー・リポジトリの開発アクティビテ�
 - **全ブランチのコミットを取得** — デフォルトブランチだけでなく、PR の feature branch のコミットも収集
 - **Discord 通知** — 2000 文字超えを自動分割して送信。Lark / LINE は拡張可能なスタブ実装
 - **GitHub Actions 対応** — 毎朝 JST 10:00 に前日のアクティビティを自動通知
+- **JST 基準の集計** — 前日 00:00 から当日 00:00 まで（日本時間）を集計
 - **設定は Secrets のみで完結** — `GH_TOKEN` と `DISCORD_WEBHOOK_URL` を設定すれば動く
 - **型安全** — Python 3.12 + dataclasses + BasedPyright
 - **テスト** — pytest + pytest-mock

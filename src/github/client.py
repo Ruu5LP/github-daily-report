@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import time
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import requests
@@ -25,6 +25,10 @@ def _require_datetime(value: str | None) -> datetime:
     if result is None:
         raise ValueError(f"Expected a datetime string, got {value!r}")
     return result
+
+
+def _format_utc(value: datetime) -> str:
+    return value.astimezone(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 class RateLimitError(Exception):
@@ -154,13 +158,20 @@ class GitHubClient:
         self,
         owner: str,
         repo: str,
-        date_str: str,
+        since: str,
+        until: str,
     ) -> list[PullRequest]:
-        """Fetch PRs created or updated on date_str, plus open PRs awaiting review."""
+        """Fetch PRs updated in [since, until), plus open PRs awaiting review."""
+        start_at = _require_datetime(since)
+        end_at = _require_datetime(until)
+        since_utc = _format_utc(start_at)
+        until_utc = _format_utc(end_at)
         prs: dict[int, PullRequest] = {}
 
-        # updated:{date} covers PRs created, merged, or otherwise updated on that day
-        updated_items = self._search_issues(f"type:pr repo:{owner}/{repo} updated:{date_str}")
+        # updated covers PRs created, merged, or otherwise updated in the window.
+        updated_items = self._search_issues(
+            f"type:pr repo:{owner}/{repo} updated:>={since_utc} updated:<{until_utc}"
+        )
         for item in updated_items:
             pr = self._parse_pr(item, f"{owner}/{repo}")
             prs[pr.number] = pr
@@ -264,9 +275,16 @@ class GitHubClient:
 
     # --- Issues ---
 
-    def get_repo_issues(self, owner: str, repo: str, date_str: str) -> list[Issue]:
-        """Fetch issues closed on date_str."""
-        items = self._search_issues(f"type:issue repo:{owner}/{repo} is:closed closed:{date_str}")
+    def get_repo_issues(self, owner: str, repo: str, since: str, until: str) -> list[Issue]:
+        """Fetch issues closed in [since, until)."""
+        start_at = _require_datetime(since)
+        end_at = _require_datetime(until)
+        since_utc = _format_utc(start_at)
+        until_utc = _format_utc(end_at)
+        items = self._search_issues(
+            f"type:issue repo:{owner}/{repo} is:closed "
+            f"closed:>={since_utc} closed:<{until_utc}"
+        )
         return [self._parse_issue(item, f"{owner}/{repo}") for item in items]
 
     def _parse_issue(self, item: dict[str, Any], repo: str) -> Issue:
@@ -283,26 +301,40 @@ class GitHubClient:
     # --- Commits ---
 
     def get_repo_commits(self, owner: str, repo: str, since: str, until: str) -> list[Commit]:
-        """Fetch commits on the default branch between since and until."""
+        """Fetch default-branch commits in [since, until)."""
+        start_at = _require_datetime(since)
+        end_at = _require_datetime(until)
+
+        # GitHub documents `since` as strictly after the supplied timestamp.
+        # Expand the API query by one second, then enforce the exact half-open
+        # interval locally so a commit exactly at the JST midnight boundary is
+        # not lost.
+        api_since = _format_utc(start_at - timedelta(seconds=1))
+        until_utc = _format_utc(end_at)
         try:
             items = self._paginate(
                 f"/repos/{owner}/{repo}/commits",
-                params={"since": since, "until": until},
+                params={"since": api_since, "until": until_utc},
             )
         except requests.HTTPError as e:
             if e.response is not None and e.response.status_code == 409:
                 return []
             raise
-        return [
-            self._parse_commit(item, f"{owner}/{repo}")
-            for item in items
-            if not item.get("commit", {}).get("message", "").startswith("Merge pull request")
-        ]
+        commits: list[Commit] = []
+        for item in items:
+            if item.get("commit", {}).get("message", "").startswith("Merge pull request"):
+                continue
+            commit = self._parse_commit(item, f"{owner}/{repo}")
+            if start_at <= commit.committed_at < end_at:
+                commits.append(commit)
+        return commits
 
     def get_pr_commits(
         self, owner: str, repo: str, pr_number: int, since: str, until: str
     ) -> list[Commit]:
-        """Fetch commits for a specific PR that fall within since..until."""
+        """Fetch commits for a specific PR in [since, until)."""
+        start_at = _require_datetime(since)
+        end_at = _require_datetime(until)
         try:
             items = self._paginate(f"/repos/{owner}/{repo}/pulls/{pr_number}/commits")
         except requests.HTTPError:
@@ -313,7 +345,12 @@ class GitHubClient:
             commit_data: dict[str, Any] = item.get("commit", {})
             author_date = commit_data.get("author", {}).get("date", "")
             message = commit_data.get("message", "")
-            if since <= author_date < until and not message.startswith("Merge pull request"):
+            author_at = _parse_datetime(author_date)
+            if (
+                author_at is not None
+                and start_at <= author_at < end_at
+                and not message.startswith("Merge pull request")
+            ):
                 result.append(self._parse_commit(item, f"{owner}/{repo}"))
         return result
 

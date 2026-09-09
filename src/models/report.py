@@ -3,6 +3,8 @@
 from dataclasses import dataclass, field
 from datetime import date, datetime
 
+from src.utils.time import to_jst_date
+
 
 @dataclass
 class PullRequest:
@@ -69,13 +71,15 @@ class DailyReport:
     @property
     def created_prs(self) -> list[PullRequest]:
         d = self.date
-        return [pr for pr in self.pull_requests if pr.created_at.date() == d]
+        return [pr for pr in self.pull_requests if to_jst_date(pr.created_at) == d]
 
     @property
     def merged_prs(self) -> list[PullRequest]:
         d = self.date
         return [
-            pr for pr in self.pull_requests if pr.merged_at is not None and pr.merged_at.date() == d
+            pr
+            for pr in self.pull_requests
+            if pr.merged_at is not None and to_jst_date(pr.merged_at) == d
         ]
 
     @property
@@ -87,7 +91,9 @@ class DailyReport:
         return [
             pr
             for pr in self.pull_requests
-            if pr.updated_at.date() == d and pr.number not in created and pr.number not in merged
+            if to_jst_date(pr.updated_at) == d
+            and pr.number not in created
+            and pr.number not in merged
         ]
 
     @property
@@ -100,7 +106,7 @@ class DailyReport:
         return [
             issue
             for issue in self.issues
-            if issue.closed_at is not None and issue.closed_at.date() == d
+            if issue.closed_at is not None and to_jst_date(issue.closed_at) == d
         ]
 
     @property

@@ -4,6 +4,7 @@ from datetime import UTC, date, datetime
 
 from src.models.report import Commit, DailyReport, Issue, PullRequest
 from src.report.generator import generate_report
+from src.utils.time import JST
 
 UTC = UTC
 TODAY = date(2026, 6, 29)
@@ -84,7 +85,7 @@ class TestDailyReportModel:
         merged_pr = make_pr(
             number=1,
             state="merged",
-            merged_at=datetime(2026, 6, 29, 15, 0, tzinfo=UTC),
+            merged_at=datetime(2026, 6, 29, 14, 0, tzinfo=UTC),
         )
         open_pr = make_pr(number=2)
         report = DailyReport(date=TODAY, pull_requests=[merged_pr, open_pr])
@@ -123,7 +124,7 @@ class TestGenerateReport:
         pr = make_pr(
             created_at=datetime(2026, 6, 29, 5, 0, tzinfo=UTC),
             state="merged",
-            merged_at=datetime(2026, 6, 29, 15, 0, tzinfo=UTC),
+            merged_at=datetime(2026, 6, 29, 14, 0, tzinfo=UTC),
         )
         issue = make_issue(closed_at=datetime(2026, 6, 29, 8, 0, tzinfo=UTC))
         commit = make_commit()
@@ -168,3 +169,60 @@ class TestGenerateReport:
         md = generate_report(report)
         assert "開発日報" in md
         assert "今日のまとめ" in md
+
+
+class TestDailyReportJSTBoundaries:
+    def test_activity_at_jst_midnight_is_included(self) -> None:
+        report = DailyReport(
+            date=TODAY,
+            pull_requests=[
+                make_pr(
+                    number=1,
+                    created_at=datetime(2026, 6, 28, 15, 0, tzinfo=UTC),
+                ),
+                make_pr(
+                    number=2,
+                    created_at=datetime(2026, 6, 29, 15, 0, tzinfo=UTC),
+                ),
+            ],
+            issues=[
+                make_issue(
+                    number=3,
+                    closed_at=datetime(2026, 6, 28, 15, 0, tzinfo=UTC),
+                ),
+                make_issue(
+                    number=4,
+                    closed_at=datetime(2026, 6, 29, 15, 0, tzinfo=UTC),
+                ),
+            ],
+        )
+
+        assert [pr.number for pr in report.created_prs] == [1]
+        assert [issue.number for issue in report.closed_issues] == [3]
+
+    def test_activity_in_first_nine_hours_is_assigned_to_jst_date(self) -> None:
+        report = DailyReport(
+            date=TODAY,
+            pull_requests=[
+                make_pr(
+                    number=1,
+                    created_at=datetime(2026, 6, 28, 14, 0, tzinfo=UTC),
+                    updated_at=datetime(2026, 6, 28, 15, 30, tzinfo=UTC),
+                )
+            ],
+        )
+
+        assert [pr.number for pr in report.updated_prs] == [1]
+
+    def test_jst_conversion_handles_explicit_timezone(self) -> None:
+        report = DailyReport(
+            date=TODAY,
+            pull_requests=[
+                make_pr(
+                    number=1,
+                    created_at=datetime(2026, 6, 29, 0, 30, tzinfo=JST),
+                )
+            ],
+        )
+
+        assert [pr.number for pr in report.created_prs] == [1]
